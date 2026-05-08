@@ -1,0 +1,26 @@
+一般正式项目的目录结构
+cpp-log-system/
+│
+├── README.md
+├── .gitignore
+├── Makefile
+│
+├── logs/
+│
+├── build/
+│
+├── tests/
+│
+├── example/
+│
+├── src/
+│   ├── util.hpp
+│   ├── level.hpp
+│   ├── message.hpp
+│   ├── formatter.hpp
+│   ├── sink.hpp
+│   ├── logger.hpp
+│   ├── looper.hpp
+│   └── manager.hpp
+│
+└── bin/
