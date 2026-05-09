@@ -1,5 +1,6 @@
 // log_level.hpp
 #pragma once
+#include <string>
 namespace log
 {
     enum class Level : int
@@ -33,4 +34,21 @@ namespace log
             return "UNKNOWN";
         }
     }
-} //namespace log
+
+    inline Level from_string(const std::string &s)
+    {
+        if (s == "TRACE")
+            return Level::TRACE;
+        if (s == "DEBUG")
+            return Level::DEBUG;
+        if (s == "INFO")
+            return Level::INFO;
+        if (s == "WARN")
+            return Level::WARN;
+        if (s == "ERROR")
+            return Level::ERROR;
+        if (s == "FATAL")
+            return Level::FATAL;
+        return Level::INFO; // 默认
+    }
+} // namespace log
