@@ -15,13 +15,13 @@ struct LogMsg {
     int                                 line_;
     std::string                         content_;
 
-    LogMsg(Level lv, const char* f, int l, std::string msg)
+    LogMsg(Level lv, const char* f, int l, std::string content)
         : level_(lv)
         , timestamp_(std::chrono::system_clock::now())
         , file_(f)
         , tid_(std::this_thread::get_id())
         , line_(l)
-        , content_(std::move(msg))
+        , content_(std::move(content))
     {}
 };
 
