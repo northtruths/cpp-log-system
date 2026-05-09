@@ -15,7 +15,7 @@ struct LogMsg {
     std::thread::id                     tid_;
     std::string                         content_;
 
-    LogMsg(Level lv, const char* f, int l, std::string content)
+    LogMsg(const Level lv, const char* f, int l, const std::string content)
         : level_(lv)
         , timestamp_(std::chrono::system_clock::now())
         , file_(f)
