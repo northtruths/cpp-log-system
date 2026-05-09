@@ -19,8 +19,8 @@ struct LogMsg {
         : level_(lv)
         , timestamp_(std::chrono::system_clock::now())
         , file_(f)
-        , tid_(std::this_thread::get_id())
         , line_(l)
+        , tid_(std::this_thread::get_id())
         , content_(std::move(content))
     {}
 };
