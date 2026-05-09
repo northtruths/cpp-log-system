@@ -11,8 +11,8 @@ struct LogMsg {
     Level                               level_;
     std::chrono::system_clock::time_point timestamp_;
     const char*                         file_;
-    std::thread::id                     tid_;
     int                                 line_;
+    std::thread::id                     tid_;
     std::string                         content_;
 
     LogMsg(Level lv, const char* f, int l, std::string content)
