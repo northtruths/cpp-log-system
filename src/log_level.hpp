@@ -14,7 +14,7 @@ namespace log
         NUM_LEVELS
     };
 
-    inline char *to_string(Level lv)
+    inline const char *to_string(Level lv)
     {
         switch (lv)
         {
