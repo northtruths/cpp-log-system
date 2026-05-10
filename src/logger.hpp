@@ -21,9 +21,9 @@ namespace log
             return logger;
         }
 
-        void set_level(const std::string &level)
+        void set_level(const Level &level)
         {
-            min_level_.store(from_string(level), std::memory_order_release);
+            min_level_.store(level, std::memory_order_release);
         }
 
         void set_formatter(std::unique_ptr<Formatter> fmt)
@@ -50,12 +50,18 @@ namespace log
         {
             if (lv < min_level_.load(std::memory_order_acquire))
                 return;
-            LogMsg event(lv, f, l, content);
-            std::string msg = formatter_->format(event);
-            transmitter_->send(msg, sinks_);
+            LogMsg msg(lv, f, l, content);
+            std::string formatted_msg = formatter_->format(msg);
+            transmitter_->send(formatted_msg, sinks_);
         }
 
     private:
+        Logger()
+            :min_level_(Level::TRACE), formatter_(make_default_formatter()), transmitter_(make_sync_transmitter())
+        {
+
+        }
+
         std::atomic<Level> min_level_;
         std::unique_ptr<Formatter> formatter_;
         std::vector<std::unique_ptr<Sink>> sinks_;
