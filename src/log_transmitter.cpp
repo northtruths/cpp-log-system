@@ -25,7 +25,7 @@ namespace log
     {
     public:
         AsyncTransmitter(size_t buffer_size)
-            : write_buff_(&buff_a_), flush_buff_(&buff_b_), buff_size_(buffer_size), is_running(true), is_flush_(false)
+            : write_buff_(&buff_a_), flush_buff_(&buff_b_), buff_size_(buffer_size), is_running_(true), is_flush_(false)
         {
             buff_a_.reserve(buff_size_);
             buff_b_.reserve(buff_size_);
@@ -33,12 +33,17 @@ namespace log
         }
         ~AsyncTransmitter()
         {
-            is_running.store(false, std::memory_order_release);
+            is_running_.store(false, std::memory_order_release);
             {
                 std::unique_lock<std::mutex> lock(mtx_buff_);
-                simple_flush(lock);
+                if (!write_buff_->empty())
+                {
+                    std::swap(write_buff_, flush_buff_);
+                    is_flush_.store(true, std::memory_order_release);
+                    cond_file_.notify_one();
+                }
             }
-            while (!is_flush_.load() && tflush_.joinable())
+            if(tflush_.joinable())
             {
                 tflush_.join();
             }
@@ -48,10 +53,13 @@ namespace log
                   std::vector<std::unique_ptr<Sink>> &sinks) override
         {
             psinks_ = &sinks;
-            std::unique_lock<std::mutex> lock(mtx_buff_);
+            std::lock_guard<std::mutex> lock(mtx_buff_);
             if (formatted_msg.size() + write_buff_->size() > buff_size_)
             {
-                simple_flush(lock);
+                // 两个缓存都满了，直接丢弃
+                if (is_flush_.load(std::memory_order_acquire))
+                    return;
+                simple_flush();
             }
             *write_buff_ += formatted_msg;
         }
@@ -65,29 +73,48 @@ namespace log
             cond_file_.notify_one();
         }
 
-        void simple_flush(std::unique_lock<std::mutex> &lock)
+        void simple_flush()
         {
-            // 如果后台线程还没处理完上一个缓冲，会阻塞业务线程
-            cond_buff_.wait(lock, [this]
-                            { return !is_flush_.load(); });
             swap_and_notify();
         }
 
         void flush_loop()
         {
-            do
+            while (true)
             {
-                std::unique_lock<std::mutex> lock(mtx_file_);
-                cond_file_.wait(lock, [this]()
-                                { return is_flush_.load(); });
-                for (auto &sink : *psinks_)
                 {
-                    sink->write(*flush_buff_);
+                    std::unique_lock<std::mutex> lock(mtx_file_);
+                    cond_file_.wait(lock, [this]
+                                    { return is_flush_.load(std::memory_order_acquire) ||
+                                             !is_running_.load(std::memory_order_acquire); });
                 }
-                flush_buff_->clear();
-                is_flush_ = false;
-                cond_buff_.notify_all();
-            } while (is_running.load() || is_flush_.load());
+
+                if (!is_running_.load(std::memory_order_acquire) &&
+                    !is_flush_.load(std::memory_order_acquire))
+                    break;
+
+                // 安全地取出待刷数据和当时绑定的 sinks
+                std::string data_to_flush;
+                std::vector<std::unique_ptr<Sink>> *sinks_snapshot = nullptr;
+
+                {
+                    std::lock_guard<std::mutex> lock(mtx_buff_);
+                    if (!flush_buff_->empty())
+                    {
+                        data_to_flush = std::move(*flush_buff_);
+                        flush_buff_->clear();
+                    }
+                    // 记录此时与数据对应的 sinks
+                    sinks_snapshot = psinks_;
+                    is_flush_.store(false, std::memory_order_release);
+                }
+
+                if (!data_to_flush.empty() && sinks_snapshot)
+                {
+                    for (auto &sink : *sinks_snapshot)
+                        sink->write(data_to_flush);
+                }
+            }
         }
         // 缓冲区
         std::string buff_a_;
@@ -98,15 +125,13 @@ namespace log
         // 后台线程
         std::thread tflush_;
         std::mutex mtx_buff_;
-        static std::mutex mtx_file_;
-        std::condition_variable cond_buff_;
+        std::mutex mtx_file_;
         std::condition_variable cond_file_;
-        std::atomic<bool> is_running;
+        std::atomic<bool> is_running_;
         std::atomic<bool> is_flush_;
         // 发送信息
-        const std::vector<std::unique_ptr<Sink>> *psinks_;
+        std::vector<std::unique_ptr<Sink>> *psinks_;
     };
-    std::mutex AsyncTransmitter::mtx_file_;
 
     std::unique_ptr<Transmitter> make_sync_transmitter()
     {
