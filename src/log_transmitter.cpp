@@ -24,8 +24,13 @@ namespace log
     class AsyncTransmitter : public Transmitter
     {
     public:
-        AsyncTransmitter(size_t buffer_size)
-            : write_buff_(&buff_a_), flush_buff_(&buff_b_), buff_size_(buffer_size), is_running_(true), is_flush_(false)
+        AsyncTransmitter(size_t buffer_size, int flush_interval_ms)
+            : write_buff_(&buff_a_),
+              flush_buff_(&buff_b_),
+              buff_size_(buffer_size),
+              is_running_(true),
+              is_flush_(false),
+              flush_interval_ms_(flush_interval_ms)
         {
             buff_a_.reserve(buff_size_);
             buff_b_.reserve(buff_size_);
@@ -43,7 +48,7 @@ namespace log
                     cond_file_.notify_one();
                 }
             }
-            if(tflush_.joinable())
+            if (tflush_.joinable())
             {
                 tflush_.join();
             }
@@ -84,14 +89,26 @@ namespace log
             {
                 {
                     std::unique_lock<std::mutex> lock(mtx_file_);
-                    cond_file_.wait(lock, [this]
-                                    { return is_flush_.load(std::memory_order_acquire) ||
-                                             !is_running_.load(std::memory_order_acquire); });
+                    cond_file_.wait_for(lock, std::chrono::milliseconds(flush_interval_ms_), [this]
+                                        { return is_flush_.load(std::memory_order_acquire) || !is_running_.load(std::memory_order_acquire); });
                 }
 
                 if (!is_running_.load(std::memory_order_acquire) &&
                     !is_flush_.load(std::memory_order_acquire))
                     break;
+
+                {
+                    // 超时主动刷新
+                    if (flush_buff_->empty() && !write_buff_->empty())
+                    {
+                        std::swap(write_buff_, flush_buff_);
+                        is_flush_.store(true, std::memory_order_release);
+                    }
+                    else if (flush_buff_->empty())
+                    {
+                        continue;
+                    }
+                }
 
                 // 安全地取出待刷数据和当时绑定的 sinks
                 std::string data_to_flush;
@@ -129,6 +146,7 @@ namespace log
         std::condition_variable cond_file_;
         std::atomic<bool> is_running_;
         std::atomic<bool> is_flush_;
+        int flush_interval_ms_;
         // 发送信息
         std::vector<std::unique_ptr<Sink>> *psinks_;
     };
@@ -138,9 +156,9 @@ namespace log
         return std::make_unique<SyncTransmitter>();
     }
 
-    std::unique_ptr<Transmitter> make_async_transmitter(size_t buffer_size)
+    std::unique_ptr<Transmitter> make_async_transmitter(size_t buffer_size, int flush_interval_ms)
     {
-        return std::make_unique<AsyncTransmitter>(buffer_size);
+        return std::make_unique<AsyncTransmitter>(buffer_size, flush_interval_ms);
     }
 
 }
