@@ -17,6 +17,6 @@ namespace log
     };
 
     std::unique_ptr<Transmitter> make_sync_transmitter();
-    std::unique_ptr<Transmitter> make_async_transmitter();
+    std::unique_ptr<Transmitter> make_async_transmitter(size_t buffer_size = 1 * 1024 * 1024, int flush_interval_ms = 1000);
 
 } // namespace log
