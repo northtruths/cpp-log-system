@@ -20,6 +20,12 @@ namespace log
         }
     };
 
+    std::unique_ptr<Transmitter> make_sync_transmitter()
+    {
+        return std::make_unique<SyncTransmitter>();
+    }
+
+    
     // 异步发送
     class AsyncTransmitter : public Transmitter
     {
@@ -150,11 +156,6 @@ namespace log
         // 发送信息
         std::vector<std::unique_ptr<Sink>> *psinks_;
     };
-
-    std::unique_ptr<Transmitter> make_sync_transmitter()
-    {
-        return std::make_unique<SyncTransmitter>();
-    }
 
     std::unique_ptr<Transmitter> make_async_transmitter(size_t buffer_size, int flush_interval_ms)
     {
