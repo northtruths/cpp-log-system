@@ -46,14 +46,18 @@ namespace log
             sinks_.clear();
         }
 
+        void set_danger_level(const Level& lv){
+            danger_level_ = lv;
+        }
+
         void operator()(const Level &lv, const char *f, int l, const std::string &content)
         {
             if (lv < min_level_.load(std::memory_order_acquire))
                 return;
             LogMsg msg(lv, f, l, content);
-            //格式化可以放进后台线程解决，可以减业务消耗
+            //格式化可以放进transmitter后台线程解决，可以减业务消耗，但这会稍微破坏框架设计
             std::string formatted_msg = formatter_->format(msg);
-            transmitter_->send(formatted_msg, sinks_);
+            transmitter_->send(formatted_msg, sinks_, lv < Level::ERROR);
         }
 
     private:
@@ -67,6 +71,7 @@ namespace log
         std::unique_ptr<Formatter> formatter_;
         std::vector<std::unique_ptr<Sink>> sinks_;
         std::unique_ptr<Transmitter> transmitter_;
+        Level danger_level_ = Level::ERROR;
     };
 
 #define LOG_TRACE(logger, content) logger(log::Level::TRACE, __FILE__, __LINE__, content)
