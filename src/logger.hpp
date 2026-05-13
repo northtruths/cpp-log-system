@@ -51,13 +51,14 @@ namespace log
             if (lv < min_level_.load(std::memory_order_acquire))
                 return;
             LogMsg msg(lv, f, l, content);
+            //格式化可以放进后台线程解决，可以减业务消耗
             std::string formatted_msg = formatter_->format(msg);
             transmitter_->send(formatted_msg, sinks_);
         }
 
     private:
         Logger()
-            :min_level_(Level::TRACE), formatter_(make_default_formatter()), transmitter_(make_sync_transmitter())
+            :min_level_(Level::TRACE), formatter_(make_default_formatter()), transmitter_(make_async_transmitter())
         {
 
         }

@@ -13,7 +13,7 @@ namespace log
         virtual ~Transmitter() = default;
 
         virtual void send(const std::string& formatted_msg,
-                          std::vector<std::unique_ptr<Sink>> &sinks) = 0;
+                          std::vector<std::unique_ptr<Sink>> &sinks, bool is_safe) = 0;
     };
 
     std::unique_ptr<Transmitter> make_sync_transmitter();

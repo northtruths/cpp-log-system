@@ -11,11 +11,16 @@ namespace log
     {
     public:
         void send(const std::string &formatted_msg,
-                  std::vector<std::unique_ptr<Sink>> &sinks) override
+                  std::vector<std::unique_ptr<Sink>> &sinks, bool is_safe) override
         {
             for (auto &sink : sinks)
             {
                 sink->write(formatted_msg);
+            }
+            if(!is_safe){
+                for(auto &sink : sinks){
+                    sink->flush();
+                }
             }
         }
     };
@@ -25,7 +30,6 @@ namespace log
         return std::make_unique<SyncTransmitter>();
     }
 
-    
     // 异步发送
     class AsyncTransmitter : public Transmitter
     {
@@ -61,7 +65,7 @@ namespace log
         }
 
         void send(const std::string &formatted_msg,
-                  std::vector<std::unique_ptr<Sink>> &sinks) override
+                  std::vector<std::unique_ptr<Sink>> &sinks, bool is_safe) override
         {
             psinks_ = &sinks;
             std::lock_guard<std::mutex> lock(mtx_buff_);
@@ -70,23 +74,21 @@ namespace log
                 // 两个缓存都满了，直接丢弃
                 if (is_flush_.load(std::memory_order_acquire))
                     return;
-                simple_flush();
+                flush();
             }
             *write_buff_ += formatted_msg;
+            if(!is_safe){
+                flush();
+            }
         }
 
     private:
-        void swap_and_notify()
+        void flush()
         {
             std::swap(write_buff_, flush_buff_);
             // 通知后台线程
             is_flush_.store(true, std::memory_order_release);
             cond_file_.notify_one();
-        }
-
-        void simple_flush()
-        {
-            swap_and_notify();
         }
 
         void flush_loop()
