@@ -84,7 +84,6 @@ namespace log
         return make_file_sink(std::string(dir), std::string(filename));
     }
 
-    
     // 滚动文件落地
     class RollFileSink : public Sink
     {
@@ -119,6 +118,20 @@ namespace log
         }
 
     private:
+        void make_time_dir(std::tm *tm_buf)
+        {
+            time_t time_now = time(nullptr);
+            localtime_r(&time_now, tm_buf);
+
+            time_t time_start = time_now - time_now % 86400;//当天起始时间
+            if (time_start != time_last_)
+            {
+                time_dir_ = std::to_string(tm_buf->tm_year + 1900) + "_" + std::to_string(tm_buf->tm_mon + 1) + "_" + std::to_string(tm_buf->tm_mday);
+                time_last_ = time_start;
+                mkdir((dir_ + "/" + time_dir_).c_str(), 0755);
+            }
+        }
+
         void roll()
         {
             // 关闭旧文件
@@ -136,12 +149,11 @@ namespace log
 
         std::string make_path()
         {
-            auto t = std::time(nullptr);
             std::tm tm_buf;
-            localtime_r(&t, &tm_buf);
-
+            make_time_dir(&tm_buf);
             std::ostringstream oss;
             oss << dir_ << "/"
+                << time_dir_ << "/"
                 << base_name_ << "_"
                 << std::put_time(&tm_buf, "%Y%m%d_%H%M%S")
                 << "_" << index_++
@@ -154,6 +166,8 @@ namespace log
         size_t max_size_;
         std::ofstream file_;
         size_t cur_written_ = 0;
+        std::time_t time_last_ = 0;
+        std::string time_dir_;
         int index_ = 0;
     };
 
