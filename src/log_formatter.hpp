@@ -10,7 +10,7 @@ namespace log
     {
     public:
         virtual ~Formatter() = default;
-        virtual std::string format(const LogMsg &msg) = 0;
+        virtual void format(LogMsg &msg) = 0;
     };
 
     std::unique_ptr<Formatter> make_default_formatter();

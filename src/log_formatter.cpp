@@ -12,7 +12,7 @@ namespace log
     class DefaultFormatter : public Formatter
     {
     public:
-        std::string format(const LogMsg &msg) override
+        void format(LogMsg &msg) override
         {
             std::ostringstream oss;
 
@@ -35,7 +35,7 @@ namespace log
             oss << " - " << msg.content_;
 
             oss << "\n";
-            return oss.str();
+            msg.formatted_msg = oss.str();
         }
 
     private:
