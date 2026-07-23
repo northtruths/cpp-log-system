@@ -2,7 +2,7 @@
 #include "log_formatter.hpp"
 #include "log_message.hpp"
 #include "log_level.hpp"
-#include <sstream>
+#include <string>
 #include <ctime>
 #include <memory>
 
@@ -14,28 +14,36 @@ namespace log
     public:
         void format(LogMsg &msg) override
         {
-            std::ostringstream oss;
+            std::string temp;
 
             // [级别]
-            oss << "[" << to_string(msg.level_) << "] ";
+            temp += "[";
+            temp += level_to_string(msg.level_);
+            temp += "] ";
 
             // [时间]
-            oss << "[" << format_time(msg.timestamp_) << "] ";
+            temp += "[";
+            temp += format_time(msg.timestamp_);
+            temp += "] ";
 
             // [文件名]
-            oss << "[" << msg.file_ << "] ";
-
+            temp += "[";
+            temp += msg.file_;
+            temp += "] ";
             // [行号]
-            oss << "[" << msg.line_ << "] ";
-
+            temp += "[";
+            temp += msg.line_;
+            temp += "] ";
             // [线程号]
-            oss << "[pid " << msg.tid_ << "] ";
-
+            temp += "[pid ";
+            temp += std::to_string(std::hash<std::thread::id>{}(msg.tid_));
+            temp += "] ";
             // 正文
-            oss << " - " << msg.content_;
+            temp += " - ";
+            temp += msg.content_;
+            temp += "\n";
 
-            oss << "\n";
-            msg.formatted_msg = oss.str();
+            msg.formatted_msg = temp;
         }
 
     private:
@@ -45,17 +53,35 @@ namespace log
             std::tm tm_buf;
             localtime_r(&t, &tm_buf);
 
-            char buf[32];
-            //每次都要printf，可以优化
-            std::snprintf(buf, sizeof(buf),
-                          "%04d-%02d-%02d %02d:%02d:%02d",
-                          tm_buf.tm_year + 1900,
-                          tm_buf.tm_mon + 1,
-                          tm_buf.tm_mday,
-                          tm_buf.tm_hour,
-                          tm_buf.tm_min,
-                          tm_buf.tm_sec);
-            return buf;
+            // 预分配 20 字节（YYYY-MM-DD HH:MM:SS 正好 19 位 + '\0'）
+            std::string result;
+            result.reserve(20);
+
+            auto append_two_digits = [&result](int value)
+            {
+                result.push_back('0' + value / 10);
+                result.push_back('0' + value % 10);
+            };
+
+            // 年（4 位）
+            int year = tm_buf.tm_year + 1900;
+            result.push_back('0' + year / 1000);
+            result.push_back('0' + (year / 100) % 10);
+            result.push_back('0' + (year / 10) % 10);
+            result.push_back('0' + year % 10);
+
+            result.push_back('-');
+            append_two_digits(tm_buf.tm_mon + 1);
+            result.push_back('-');
+            append_two_digits(tm_buf.tm_mday);
+            result.push_back(' ');
+            append_two_digits(tm_buf.tm_hour);
+            result.push_back(':');
+            append_two_digits(tm_buf.tm_min);
+            result.push_back(':');
+            append_two_digits(tm_buf.tm_sec);
+
+            return result;
         }
     };
 
