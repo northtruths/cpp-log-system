@@ -1,0 +1,30 @@
+#pragma once
+#include "log_level.hpp"
+#include <sstream>
+#include <string>
+
+namespace log
+{
+    class Logger;
+
+    class LogStream
+    {
+    public:
+        LogStream(Logger &owner, Level lv, const char *file, int line);
+        ~LogStream();
+
+        template <typename T>
+        LogStream &operator<<(const T &value)
+        {
+            oss_ << value;
+            return *this;
+        }
+
+    private:
+        Logger &owner_;
+        Level lv_;
+        const char *file_;
+        int line_;
+        std::ostringstream oss_;
+    };
+}
