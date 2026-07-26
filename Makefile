@@ -5,15 +5,15 @@ TARGET           := test
 
 # 编译器与标准
 CXX              := g++
-CXXFLAGS         := -std=c++17 -Wall -Wextra -g -O0
+CXXFLAGS         := -std=c++17 -Wall -Wextra -g -O2
 LDFLAGS          := -lpthread
 
 # 目录结构
 SRC_DIR          := src
+INCLUDE_DIR      := include 
 TEST_DIR         := tests
 BUILD_DIR        := build
 BIN_DIR          := bin
-INC_DIR          := $(SRC_DIR)
 
 # ============================================================
 #  源文件收集
@@ -40,13 +40,13 @@ $(BIN_DIR)/$(TARGET): $(CORE_OBJS) $(TEST_OBJS) | $(BIN_DIR)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	@echo "  [CC]  $<"
-	@$(CXX) $(CXXFLAGS) -I$(INC_DIR) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # 编译 tests
 $(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	@echo "  [CC]  $<"
-	@$(CXX) $(CXXFLAGS) -I$(INC_DIR) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # 目录
 $(BIN_DIR) $(BUILD_DIR):
@@ -60,7 +60,7 @@ $(BIN_DIR) $(BUILD_DIR):
 clean:
 	@echo "  清理..."
 	@rm -rf $(BUILD_DIR) $(BIN_DIR) 
+	@rm -rf log
 	@rm -rf logs
-
 run: all
 	@./$(BIN_DIR)/$(TARGET)
