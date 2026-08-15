@@ -101,9 +101,7 @@ namespace mylog
             if (lv < min_level_.load(std::memory_order_acquire))
                 return;
             LogMsg msg(lv, file, line, content);
-            // 格式化可以放进transmitter后台线程解决，可以减业务消耗，但这会稍微破坏框架设计，可以后续优化
-            formatter_->format(msg);
-            transmitter_->send(msg.formatted_msg, sinks_, lv < danger_level_);
+            transmitter_->send(formatter_->format(msg), sinks_, lv < danger_level_);
         }
 
         LogStream operator()(const Level lv, const char *file, int line)

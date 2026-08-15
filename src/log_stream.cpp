@@ -12,7 +12,6 @@ namespace mylog
         if (lv_ < owner_.min_level_.load(std::memory_order_acquire))
             return;
         LogMsg msg(lv_, file_, line_, oss_.str());
-        owner_.formatter_->format(msg);
-        owner_.transmitter_->send(msg.formatted_msg, owner_.sinks_, lv_ < danger_level_);
+        owner_.transmitter_->send(owner_.formatter_->format(msg), owner_.sinks_, lv_ < danger_level_);
     }
 }

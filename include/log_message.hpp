@@ -14,7 +14,6 @@ struct LogMsg {
     int                                 line_;
     std::thread::id                     tid_;
     std::string                         content_;//正文
-    std::string                         formatted_msg;//完整信息
 
     LogMsg(const Level lv, const char* f, int l, const std::string content)
         : level_(lv)

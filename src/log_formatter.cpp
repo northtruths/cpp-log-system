@@ -12,7 +12,7 @@ namespace mylog
     class DefaultFormatter : public Formatter
     {
     public:
-        void format(LogMsg &msg) override
+        std::string format(LogMsg &msg) override
         {
             std::string temp;
 
@@ -43,7 +43,7 @@ namespace mylog
             temp += msg.content_;
             temp += "\n";
 
-            msg.formatted_msg = temp;
+            return temp;
         }
 
     private:
