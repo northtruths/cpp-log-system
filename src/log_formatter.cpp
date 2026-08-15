@@ -6,7 +6,7 @@
 #include <ctime>
 #include <memory>
 
-namespace log
+namespace mylog
 {
 
     class DefaultFormatter : public Formatter
@@ -32,7 +32,7 @@ namespace log
             temp += "] ";
             // [行号]
             temp += "[";
-            temp += msg.line_;
+            temp += std::to_string(msg.line_);
             temp += "] ";
             // [线程号]
             temp += "[pid ";
