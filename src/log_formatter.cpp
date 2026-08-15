@@ -27,9 +27,9 @@ namespace mylog
             temp += "] ";
 
             // [文件名]
-            temp += "[";
+            temp += "[ ";
             temp += msg.file_;
-            temp += "] ";
+            temp += " ] ";
             // [行号]
             temp += "[";
             temp += std::to_string(msg.line_);
