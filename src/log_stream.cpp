@@ -4,8 +4,8 @@
 
 namespace mylog
 {
-    LogStream::LogStream(Logger& owner, Level lv, const char* file, int line)
-        : owner_(owner), lv_(lv), file_(file), line_(line) {}
+    LogStream::LogStream(Logger& owner, Level lv, const char* file, int line, Level danger_level)
+        : owner_(owner), lv_(lv), file_(file), line_(line), danger_level_(danger_level) {}
 
     LogStream::~LogStream()
     {
@@ -13,6 +13,6 @@ namespace mylog
             return;
         LogMsg msg(lv_, file_, line_, oss_.str());
         owner_.formatter_->format(msg);
-        owner_.transmitter_->send(msg.formatted_msg, owner_.sinks_, lv_ < Level::ERROR);
+        owner_.transmitter_->send(msg.formatted_msg, owner_.sinks_, lv_ < danger_level_);
     }
 }

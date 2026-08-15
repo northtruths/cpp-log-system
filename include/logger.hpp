@@ -20,6 +20,36 @@ namespace mylog
         friend class LogStream;
 
     public:
+        // 注册信号处理（在 main 里调用一次）
+        void register_signal_handler()
+        {
+            struct sigaction sa;
+            sa.sa_handler = signal_handler;
+            sigemptyset(&sa.sa_mask);
+            sa.sa_flags = 0;
+            sigaction(SIGINT, &sa, nullptr);  // Ctrl+C
+            sigaction(SIGTERM, &sa, nullptr); // kill
+            sigaction(SIGSEGV, &sa, nullptr); // 段错误（可选）
+        }
+
+        // 检查是否收到退出信号
+        bool should_exit() const
+        {
+            return exit_requested_.load();
+        }
+
+        // 强制刷新所有缓冲区（信号处理函数里调用）
+        void flush_all()
+        {
+            for (auto &sink : sinks_)
+            {
+                if (sink)
+                {
+                    sink->flush();
+                }
+            }
+        }
+
         static Logger &instance()
         {
             static Logger logger;
@@ -73,18 +103,28 @@ namespace mylog
             LogMsg msg(lv, file, line, content);
             // 格式化可以放进transmitter后台线程解决，可以减业务消耗，但这会稍微破坏框架设计，可以后续优化
             formatter_->format(msg);
-            transmitter_->send(msg.formatted_msg, sinks_, lv < Level::ERROR);
+            transmitter_->send(msg.formatted_msg, sinks_, lv < danger_level_);
         }
 
         LogStream operator()(const Level lv, const char *file, int line)
         {
-            return LogStream(*this, lv, file, line);
+            return LogStream(*this, lv, file, line, danger_level_);
         }
 
     private:
         Logger()
-            : min_level_(Level::TRACE), formatter_(make_default_formatter()), transmitter_(make_async_transmitter())
+            : min_level_(Level::TRACE), formatter_(make_default_formatter()), transmitter_(make_async_transmitter()), exit_requested_(false)
         {
+        }
+
+        static void signal_handler(int sig)
+        {
+            // 强制刷日志
+            instance().flush_all();
+
+            // 恢复到默认行为，重新触发信号（让程序正常退出）
+            signal(sig, SIG_DFL);
+            raise(sig);
         }
 
     private:
@@ -93,23 +133,25 @@ namespace mylog
         std::vector<std::unique_ptr<Sink>> sinks_;
         std::unique_ptr<Transmitter> transmitter_;
         Level danger_level_ = Level::ERROR;
+
+        std::atomic<bool> exit_requested_;
     };
 
     static Logger &logger = Logger::instance();
 
 // 字符串版 —— 直接传内容
-#define LOG_TRACE(content) logger(log::Level::TRACE, __FILE__, __LINE__, content)
-#define LOG_DEBUG(content) logger(log::Level::DEBUG, __FILE__, __LINE__, content)
-#define LOG_INFO(content) logger(log::Level::INFO, __FILE__, __LINE__, content)
-#define LOG_WARN(content) logger(log::Level::WARN, __FILE__, __LINE__, content)
-#define LOG_ERROR(content) logger(log::Level::ERROR, __FILE__, __LINE__, content)
-#define LOG_FATAL(content) logger(log::Level::FATAL, __FILE__, __LINE__, content)
+#define LOG_TRACE(content) logger(mylog::Level::TRACE, __FILE__, __LINE__, content)
+#define LOG_DEBUG(content) logger(mylog::Level::DEBUG, __FILE__, __LINE__, content)
+#define LOG_INFO(content) logger(mylog::Level::INFO, __FILE__, __LINE__, content)
+#define LOG_WARN(content) logger(mylog::Level::WARN, __FILE__, __LINE__, content)
+#define LOG_ERROR(content) logger(mylog::Level::ERROR, __FILE__, __LINE__, content)
+#define LOG_FATAL(content) logger(mylog::Level::FATAL, __FILE__, __LINE__, content)
 
 // 流式版 —— 不传 content，用 << 追加
-#define LOG_TRACE_STREAM() logger(log::Level::TRACE, __FILE__, __LINE__)
-#define LOG_DEBUG_STREAM() logger(log::Level::DEBUG, __FILE__, __LINE__)
-#define LOG_INFO_STREAM() logger(log::Level::INFO, __FILE__, __LINE__)
-#define LOG_WARN_STREAM() logger(log::Level::WARN, __FILE__, __LINE__)
-#define LOG_ERROR_STREAM() logger(log::Level::ERROR, __FILE__, __LINE__)
-#define LOG_FATAL_STREAM() logger(log::Level::FATAL, __FILE__, __LINE__)
+#define LOG_TRACE_STREAM() logger(mylog::Level::TRACE, __FILE__, __LINE__)
+#define LOG_DEBUG_STREAM() logger(mylog::Level::DEBUG, __FILE__, __LINE__)
+#define LOG_INFO_STREAM() logger(mylog::Level::INFO, __FILE__, __LINE__)
+#define LOG_WARN_STREAM() logger(mylog::Level::WARN, __FILE__, __LINE__)
+#define LOG_ERROR_STREAM() logger(mylog::Level::ERROR, __FILE__, __LINE__)
+#define LOG_FATAL_STREAM() logger(mylog::Level::FATAL, __FILE__, __LINE__)
 } // namespace log

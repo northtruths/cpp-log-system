@@ -10,7 +10,7 @@ namespace mylog
     class LogStream
     {
     public:
-        LogStream(Logger &owner, Level lv, const char *file, int line);
+        LogStream(Logger &owner, Level lv, const char *file, int line, Level danger_level);
         ~LogStream();
 
         template <typename T>
@@ -25,6 +25,7 @@ namespace mylog
         Level lv_;
         const char *file_;
         int line_;
+        Level danger_level_;
         std::ostringstream oss_;
     };
 }
