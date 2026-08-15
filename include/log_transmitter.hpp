@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-namespace log
+namespace mylog
 {
     class Transmitter
     {

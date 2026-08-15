@@ -4,7 +4,7 @@
 #include <condition_variable>
 #include <atomic>
 
-namespace log
+namespace mylog
 {
     // 同步发送
     class SyncTransmitter : public Transmitter

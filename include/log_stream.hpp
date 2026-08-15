@@ -3,7 +3,7 @@
 #include <sstream>
 #include <string>
 
-namespace log
+namespace mylog
 {
     class Logger;
 

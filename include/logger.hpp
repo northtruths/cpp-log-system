@@ -13,7 +13,7 @@
 #include <sstream>
 #include <signal.h>
 
-namespace log
+namespace mylog
 {
     class Logger
     {

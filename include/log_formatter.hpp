@@ -3,7 +3,7 @@
 #include "log_message.hpp"
 #include <string>
 
-namespace log
+namespace mylog
 {
 
     class Formatter

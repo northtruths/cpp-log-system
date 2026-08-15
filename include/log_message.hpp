@@ -5,7 +5,7 @@
 #include <chrono>
 #include <thread>
 
-namespace log {
+namespace mylog {
 
 struct LogMsg {
     Level                               level_;

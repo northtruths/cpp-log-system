@@ -1,7 +1,7 @@
 // log_level.hpp
 #pragma once
 #include <string>
-namespace log
+namespace mylog
 {
     enum class Level : int
     {

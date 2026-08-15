@@ -2,7 +2,7 @@
 #include "logger.hpp"
 #include "log_message.hpp"
 
-namespace log
+namespace mylog
 {
     LogStream::LogStream(Logger& owner, Level lv, const char* file, int line)
         : owner_(owner), lv_(lv), file_(file), line_(line) {}

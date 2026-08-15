@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <ctime>
 
-namespace log
+namespace mylog
 {
     // 落地控制台
     class ConsoleSink : public Sink
