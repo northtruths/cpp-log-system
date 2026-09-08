@@ -5,7 +5,7 @@ TARGET           := test
 
 # 编译器与标准
 CXX              := g++
-CXXFLAGS         := -std=c++17 -Wall -Wextra -g -O2
+CXXFLAGS         := -std=c++11 -Wall -Wextra -g -O2
 LDFLAGS          := -lpthread
 
 # 目录结构
