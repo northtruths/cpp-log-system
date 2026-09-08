@@ -97,6 +97,7 @@ namespace mylog
             {
                 {
                     std::unique_lock<std::mutex> lock(mtx_file_);
+                    // 超时主动刷新
                     cond_file_.wait_for(lock, std::chrono::milliseconds(flush_interval_ms_), [this]
                                         { return is_flush_.load(std::memory_order_acquire) || !is_running_.load(std::memory_order_acquire); });
                 }
@@ -106,7 +107,6 @@ namespace mylog
                     break;
 
                 {
-                    // 超时主动刷新
                     if (flush_buff_->empty() && !write_buff_->empty())
                     {
                         std::swap(write_buff_, flush_buff_);
