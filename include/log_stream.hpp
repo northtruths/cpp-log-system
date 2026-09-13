@@ -13,6 +13,14 @@ namespace mylog
         LogStream(Logger &owner, Level lv, const char *file, int line, Level danger_level);
         ~LogStream();
 
+        // 禁止拷贝
+        LogStream(const LogStream &) = delete;
+        LogStream &operator=(const LogStream &) = delete;
+
+        // 允许移动
+        LogStream(LogStream &&) = default;
+        LogStream &operator=(LogStream &&) = default;
+
         template <typename T>
         LogStream &operator<<(const T &value)
         {
